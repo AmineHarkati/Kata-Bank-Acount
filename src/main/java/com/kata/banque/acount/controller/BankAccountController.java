@@ -1,24 +1,49 @@
 package com.kata.banque.acount.controller;
 
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.kata.banque.acount.service.BankAccountService;
+import com.kata.banque.acount.model.BankAccount;
+import com.kata.banque.acount.model.Transaction;
+import com.kata.banque.serviceInterface.DepositService;
+import com.kata.banque.serviceInterface.PrintStatementService;
+import com.kata.banque.serviceInterface.WithDrawService;
 
 @RestController
 @RequestMapping("/account")
 public class BankAccountController {
-    private final BankAccountService service;
+    
+    @Autowired
+    private DepositService depositService;
+    @Autowired
+    private PrintStatementService printStatementService;
+    @Autowired
+    private WithDrawService withDrawService;
+    
+    private final BankAccount account  = new BankAccount();;
+    private final List<Transaction> transactions = new ArrayList<>();
 
-    public BankAccountController(BankAccountService service) {
+    /*public BankAccountController() {
+        this.account = new BankAccount();
+        this.transactions = new ArrayList<>();
+    }*/
+
+
+    //private final BankAccountService service;
+
+    /*public BankAccountController(BankAccountService service) {
         this.service = service;
-    }
+    }*/
 
     @PostMapping("/deposit/{amount}")
     public ResponseEntity<String> deposit(@PathVariable double amount) {
         try{
-        service.deposit(amount);
+            depositService.deposit(amount,account,transactions);
         return ResponseEntity.ok("Dépôt effectué : " + amount);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Erreur : montant négatif ou 0 non autorisé");
@@ -31,7 +56,7 @@ public class BankAccountController {
             return ResponseEntity.badRequest().body("montant doit etre sup à 0");
         }
         try {
-            service.withdraw(amount);
+            withDrawService.withdraw(amount,account,transactions);
             return ResponseEntity.ok("Retrait effectué : " + amount);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Erreur : Solde insuffisant.");
@@ -40,6 +65,6 @@ public class BankAccountController {
 
     @GetMapping("/statement")
     public ResponseEntity<String> getStatement() {
-        return ResponseEntity.ok(service.printStatement());
+        return ResponseEntity.ok(printStatementService.printStatement(transactions));
     }
 }
